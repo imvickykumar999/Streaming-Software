@@ -49,37 +49,58 @@ class YouTubeStreamerGUI:
         self.start_output_reader()
     
     def setup_dark_theme(self):
-        """Setup modern dark theme with light buttons"""
-        # Dark theme colors
-        self.bg_color = "#1e1e1e"  # Dark background
+        """Setup YouTube red theme with rounded corners"""
+        # YouTube red theme colors
+        self.bg_color = "#0f0f0f"  # Very dark background (YouTube dark)
         self.fg_color = "#ffffff"   # White text
-        self.entry_bg = "#2d2d2d"  # Dark entry background
+        self.entry_bg = "#181818"   # Slightly lighter dark for entries
         self.entry_fg = "#ffffff"   # White entry text
-        self.button_bg = "#4a9eff"  # Light blue button
+        self.button_bg = "#FF0000"  # YouTube red
         self.button_fg = "#ffffff"  # White button text
-        self.button_hover = "#5fb0ff"  # Lighter blue on hover
-        self.accent_color = "#00d4ff"  # Cyan accent
+        self.button_hover = "#CC0000"  # Darker red on hover
+        self.button_pressed = "#AA0000"  # Even darker when pressed
+        self.accent_color = "#FF0000"  # YouTube red accent
         self.success_color = "#4caf50"  # Green for success
         self.error_color = "#f44336"    # Red for errors
+        self.border_color = "#303030"   # Border color
         
         # Configure root window
         self.root.configure(bg=self.bg_color)
         
-        # Configure ttk styles
+        # Configure ttk styles with rounded appearance
         style = ttk.Style()
         style.theme_use('clam')
         
-        # Configure styles
-        style.configure('TFrame', background=self.bg_color)
-        style.configure('TLabel', background=self.bg_color, foreground=self.fg_color)
-        style.configure('TEntry', fieldbackground=self.entry_bg, foreground=self.entry_fg, 
-                       borderwidth=1, relief='solid')
-        style.configure('TButton', background=self.button_bg, foreground=self.button_fg,
-                       borderwidth=0, focuscolor='none', padding=10)
+        # Configure styles with YouTube red theme
+        style.configure('TFrame', background=self.bg_color, borderwidth=0)
+        style.configure('TLabel', background=self.bg_color, foreground=self.fg_color, font=("Segoe UI", 10))
+        style.configure('TEntry', 
+                       fieldbackground=self.entry_bg, 
+                       foreground=self.entry_fg,
+                       borderwidth=0,
+                       relief='flat',
+                       padding=10)
+        style.map('TEntry',
+                 fieldbackground=[('focus', self.entry_bg)],
+                 bordercolor=[('focus', self.accent_color)])
+        
+        # Button style with YouTube red
+        style.configure('TButton', 
+                       background=self.button_bg, 
+                       foreground=self.button_fg,
+                       borderwidth=0,
+                       focuscolor='none',
+                       padding=(20, 12),
+                       font=("Segoe UI", 10, "bold"))
         style.map('TButton',
-                 background=[('active', self.button_hover), ('pressed', self.button_bg)])
-        style.configure('TCheckbutton', background=self.bg_color, foreground=self.fg_color)
-        style.configure('TCheckbutton', focuscolor='none')
+                 background=[('active', self.button_hover), 
+                            ('pressed', self.button_pressed)],
+                 foreground=[('active', self.button_fg), ('pressed', self.button_fg)])
+        
+        style.configure('TCheckbutton', 
+                       background=self.bg_color, 
+                       foreground=self.fg_color,
+                       font=("Segoe UI", 10))
         style.map('TCheckbutton',
                  background=[('selected', self.bg_color)],
                  foreground=[('selected', self.fg_color)])
@@ -97,7 +118,7 @@ class YouTubeStreamerGUI:
         title_label = tk.Label(
             title_frame,
             text="YouTube Live Streamer",
-            font=("Segoe UI", 24, "bold"),
+            font=("Segoe UI", 28, "bold"),
             bg=self.bg_color,
             fg=self.accent_color
         )
@@ -106,11 +127,11 @@ class YouTubeStreamerGUI:
         subtitle_label = tk.Label(
             title_frame,
             text="Stream your videos to YouTube Live",
-            font=("Segoe UI", 10),
+            font=("Segoe UI", 11),
             bg=self.bg_color,
-            fg="#888888"
+            fg="#aaaaaa"
         )
-        subtitle_label.pack(pady=(5, 0))
+        subtitle_label.pack(pady=(8, 0))
         
         # Video file selection section
         section_frame = ttk.Frame(main_frame)
@@ -125,10 +146,27 @@ class YouTubeStreamerGUI:
         video_frame.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=8)
         video_frame.columnconfigure(0, weight=1)
         
-        self.video_file_entry = ttk.Entry(video_frame, textvariable=self.video_file_var, font=("Segoe UI", 10))
-        self.video_file_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
+        # Create rounded entry frame
+        entry_frame1 = tk.Frame(video_frame, bg=self.bg_color)
+        entry_frame1.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
+        entry_frame1.columnconfigure(0, weight=1)
         
-        browse_btn = ttk.Button(video_frame, text="Browse", command=self.browse_video_file, width=12)
+        self.video_file_entry = tk.Entry(
+            entry_frame1,
+            textvariable=self.video_file_var,
+            font=("Segoe UI", 10),
+            bg=self.entry_bg,
+            fg=self.entry_fg,
+            insertbackground=self.entry_fg,
+            relief=tk.FLAT,
+            borderwidth=0,
+            highlightthickness=2,
+            highlightbackground=self.border_color,
+            highlightcolor=self.accent_color
+        )
+        self.video_file_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=12, pady=10)
+        
+        browse_btn = self.create_rounded_button(video_frame, "Browse", self.browse_video_file, width=12)
         browse_btn.grid(row=0, column=1)
         
         # YouTube Stream Key section
@@ -140,9 +178,26 @@ class YouTubeStreamerGUI:
         key_frame.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=8)
         key_frame.columnconfigure(0, weight=1)
         
-        stream_key_entry = ttk.Entry(key_frame, textvariable=self.stream_key_var, 
-                                     show="*", font=("Segoe UI", 10))
-        stream_key_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
+        # Create rounded entry frame
+        entry_frame2 = tk.Frame(key_frame, bg=self.bg_color)
+        entry_frame2.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
+        entry_frame2.columnconfigure(0, weight=1)
+        
+        stream_key_entry = tk.Entry(
+            entry_frame2,
+            textvariable=self.stream_key_var,
+            show="*",
+            font=("Segoe UI", 10),
+            bg=self.entry_bg,
+            fg=self.entry_fg,
+            insertbackground=self.entry_fg,
+            relief=tk.FLAT,
+            borderwidth=0,
+            highlightthickness=2,
+            highlightbackground=self.border_color,
+            highlightcolor=self.accent_color
+        )
+        stream_key_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=12, pady=10)
         
         self.show_key_var = tk.BooleanVar()
         show_key_check = ttk.Checkbutton(key_frame, text="Show", variable=self.show_key_var,
@@ -151,31 +206,35 @@ class YouTubeStreamerGUI:
         show_key_check.grid(row=0, column=1)
         
         # Control buttons with modern styling
-        button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=2, column=0, columnspan=3, pady=30)
+        self.button_frame = ttk.Frame(main_frame)
+        self.button_frame.grid(row=2, column=0, columnspan=3, pady=30)
         
-        self.start_button = ttk.Button(
-            button_frame, 
-            text="▶ Start Stream", 
-            command=self.start_stream, 
-            width=18
+        self.start_button_frame = self.create_rounded_button(
+            self.button_frame, 
+            "▶ Start Stream", 
+            self.start_stream, 
+            width=20,
+            height=2
         )
-        self.start_button.pack(side=tk.LEFT, padx=8)
+        self.start_button_frame.pack(side=tk.LEFT, padx=10)
+        self.start_button = self.start_button_frame  # For compatibility
         
-        self.stop_button = ttk.Button(
-            button_frame, 
-            text="⏹ Stop Stream", 
-            command=self.stop_stream, 
-            width=18,
-            state=tk.DISABLED
+        self.stop_button_frame = self.create_rounded_button(
+            self.button_frame, 
+            "⏹ Stop Stream", 
+            self.stop_stream, 
+            width=20,
+            height=2,
+            disabled=True
         )
-        self.stop_button.pack(side=tk.LEFT, padx=8)
+        self.stop_button_frame.pack(side=tk.LEFT, padx=10)
+        self.stop_button = self.stop_button_frame  # For compatibility
         
-        config_frame = ttk.Frame(button_frame)
-        config_frame.pack(side=tk.LEFT, padx=15)
+        config_frame = ttk.Frame(self.button_frame)
+        config_frame.pack(side=tk.LEFT, padx=20)
         
-        ttk.Button(config_frame, text="💾 Save", command=self.save_config, width=12).pack(side=tk.LEFT, padx=4)
-        ttk.Button(config_frame, text="📂 Load", command=self.load_config, width=12).pack(side=tk.LEFT, padx=4)
+        self.create_rounded_button(config_frame, "💾 Save", self.save_config, width=14).pack(side=tk.LEFT, padx=6)
+        self.create_rounded_button(config_frame, "📂 Load", self.load_config, width=14).pack(side=tk.LEFT, padx=6)
         
         # Status indicator
         status_frame = ttk.Frame(main_frame)
@@ -203,6 +262,10 @@ class YouTubeStreamerGUI:
         # Set initial status
         self.update_status("Ready")
         
+        # Store button references for state changes
+        self.start_button_widget = None
+        self.stop_button_widget = None
+        
         # Log display section
         log_section = ttk.Frame(main_frame)
         log_section.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=10)
@@ -215,7 +278,7 @@ class YouTubeStreamerGUI:
         
         ttk.Label(log_header, text="Stream Logs", font=("Segoe UI", 12, "bold")).pack(side=tk.LEFT)
         
-        clear_btn = ttk.Button(log_header, text="Clear", command=self.clear_logs, width=10)
+        clear_btn = self.create_rounded_button(log_header, "Clear", self.clear_logs, width=10)
         clear_btn.pack(side=tk.RIGHT)
         
         # Log text area with dark theme
@@ -236,12 +299,130 @@ class YouTubeStreamerGUI:
             selectforeground=self.button_fg,
             font=("Consolas", 9),
             relief=tk.FLAT,
-            borderwidth=1,
-            highlightthickness=1,
-            highlightbackground="#444444",
+            borderwidth=0,
+            highlightthickness=2,
+            highlightbackground=self.border_color,
             highlightcolor=self.accent_color
         )
         self.log_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+    
+    def create_rounded_button(self, parent, text, command, width=15, height=1, disabled=False):
+        """Create a button with rounded corners using Canvas"""
+        # Create frame to hold the button
+        btn_frame = tk.Frame(parent, bg=self.bg_color)
+        
+        # Button dimensions
+        width_px = width * 8
+        height_px = 42 if height == 2 else 38
+        radius = 10
+        
+        # Create canvas for rounded button
+        canvas = tk.Canvas(
+            btn_frame,
+            width=width_px,
+            height=height_px,
+            bg=self.bg_color,
+            highlightthickness=0,
+            relief=tk.FLAT
+        )
+        canvas.pack()
+        
+        # Button colors
+        if disabled:
+            btn_color = "#666666"
+            hover_color = "#666666"
+            text_color = "#999999"
+        else:
+            btn_color = self.button_bg
+            hover_color = self.button_hover
+            text_color = self.button_fg
+        
+        def draw_rounded_rect(canvas, x1, y1, x2, y2, radius, fill, outline):
+            """Draw a rounded rectangle"""
+            # Main rectangle
+            canvas.create_rectangle(x1+radius, y1, x2-radius, y2, fill=fill, outline=outline, width=0)
+            canvas.create_rectangle(x1, y1+radius, x2, y2-radius, fill=fill, outline=outline, width=0)
+            # Rounded corners
+            canvas.create_oval(x1, y1, x1+radius*2, y1+radius*2, fill=fill, outline=outline, width=0)
+            canvas.create_oval(x2-radius*2, y1, x2, y1+radius*2, fill=fill, outline=outline, width=0)
+            canvas.create_oval(x1, y2-radius*2, x1+radius*2, y2, fill=fill, outline=outline, width=0)
+            canvas.create_oval(x2-radius*2, y2-radius*2, x2, y2, fill=fill, outline=outline, width=0)
+        
+        def draw_button(color, txt_color=text_color):
+            canvas.delete("all")
+            draw_rounded_rect(canvas, 0, 0, width_px, height_px, radius, color, color)
+            # Add text
+            canvas.create_text(
+                width_px//2, height_px//2,
+                text=text,
+                fill=txt_color,
+                font=("Segoe UI", 11, "bold")
+            )
+        
+        draw_button(btn_color)
+        
+        # Store canvas and state for updates
+        btn_frame.canvas = canvas
+        btn_frame.disabled = disabled
+        btn_frame.draw_button = draw_button
+        btn_frame.btn_color = btn_color
+        btn_frame.hover_color = hover_color
+        btn_frame.text = text
+        btn_frame.command = command
+        btn_frame.text_color = text_color
+        
+        # Button functionality
+        def on_enter(e):
+            if not disabled:
+                draw_button(hover_color, text_color)
+        
+        def on_leave(e):
+            if not disabled:
+                draw_button(btn_color, text_color)
+        
+        def on_click(e):
+            if not disabled and command:
+                command()
+        
+        if not disabled:
+            canvas.bind("<Enter>", on_enter)
+            canvas.bind("<Leave>", on_leave)
+            canvas.bind("<Button-1>", on_click)
+            canvas.config(cursor="hand2")
+        
+        return btn_frame
+    
+    def _update_button_state(self, button_frame, disabled):
+        """Update button state (enabled/disabled)"""
+        if hasattr(button_frame, 'canvas'):
+            button_frame.disabled = disabled
+            if disabled:
+                button_frame.btn_color = "#666666"
+                button_frame.hover_color = "#666666"
+                button_frame.text_color = "#999999"
+                # Unbind events
+                for event in ["<Enter>", "<Leave>", "<Button-1>"]:
+                    button_frame.canvas.unbind(event)
+                button_frame.canvas.config(cursor="")
+            else:
+                button_frame.btn_color = self.button_bg
+                button_frame.hover_color = self.button_hover
+                button_frame.text_color = self.button_fg
+                # Rebind events
+                def on_enter(e):
+                    button_frame.draw_button(button_frame.hover_color, button_frame.text_color)
+                def on_leave(e):
+                    button_frame.draw_button(button_frame.btn_color, button_frame.text_color)
+                def on_click(e):
+                    if button_frame.command:
+                        button_frame.command()
+                button_frame.canvas.bind("<Enter>", on_enter)
+                button_frame.canvas.bind("<Leave>", on_leave)
+                button_frame.canvas.bind("<Button-1>", on_click)
+                button_frame.canvas.config(cursor="hand2")
+            
+            # Redraw button
+            button_frame.draw_button(button_frame.btn_color, button_frame.text_color)
     
     def browse_video_file(self):
         filename = filedialog.askopenfilename(
@@ -438,8 +619,9 @@ class YouTubeStreamerGUI:
         
         self.streaming = True
         self.restart_count = 0
-        self.start_button.config(state=tk.DISABLED)
-        self.stop_button.config(state=tk.NORMAL)
+        # Disable start button, enable stop button
+        self._update_button_state(self.start_button_frame, disabled=True)
+        self._update_button_state(self.stop_button_frame, disabled=False)
         self.update_status("Starting stream...")
         
         # Start streaming in a separate thread
@@ -456,7 +638,7 @@ class YouTubeStreamerGUI:
         self.log_message("Received stop signal, stopping stream...")
         
         # Disable stop button to prevent multiple clicks
-        self.stop_button.config(state=tk.DISABLED)
+        self._update_button_state(self.stop_button_frame, disabled=True)
         
         # Force kill the ffmpeg process immediately
         if self.ffmpeg_process:
@@ -516,7 +698,7 @@ class YouTubeStreamerGUI:
             self.log_message("Warning: Some processes may still be running. Forcing kill...")
             self.kill_all_ffmpeg_processes()
         
-        self.start_button.config(state=tk.NORMAL)
+        self._update_button_state(self.start_button_frame, disabled=False)
         self.update_status("Stopped")
         self.log_message("Stream stopped by user.")
     
@@ -631,8 +813,8 @@ class YouTubeStreamerGUI:
         
         # Cleanup
         self.root.after(0, lambda: self.update_status("Stopped"))
-        self.root.after(0, lambda: self.start_button.config(state=tk.NORMAL))
-        self.root.after(0, lambda: self.stop_button.config(state=tk.DISABLED))
+        self.root.after(0, lambda: self._update_button_state(self.start_button_frame, disabled=False))
+        self.root.after(0, lambda: self._update_button_state(self.stop_button_frame, disabled=True))
     
     def save_config(self):
         """Save configuration to JSON file"""
