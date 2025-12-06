@@ -1,0 +1,26 @@
+# Optional dependency for embedded video display:
+# tkinterweb - For displaying YouTube videos in an iframe within the GUI
+# Install with: pip install tkinterweb
+# 
+# If tkinterweb is not installed, the application will open videos in your default browser instead.
+#
+# Standard library modules used (no installation needed):
+# - tkinter (usually included with Python)
+# - subprocess
+# - threading
+# - os
+# - json
+# - datetime
+# - re
+# - webbrowser
+# - urllib.parse
+# - queue
+# - platform
+# - time
+
+tkinterweb
+
+# However, you need to have FFmpeg installed on your system
+# Download from: https://ffmpeg.org/download.html
+# Make sure ffmpeg is in your system PATH
+

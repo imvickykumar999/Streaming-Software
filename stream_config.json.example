@@ -1,0 +1,6 @@
+{
+    "youtube_url": "https://studio.youtube.com/video/VIDEO_ID/livestreaming",
+    "video_file": "path/to/your/video.mp4",
+    "stream_key": "YOUR_YOUTUBE_STREAM_KEY"
+}
+
