@@ -15,25 +15,16 @@ import json
 import time
 import queue
 import platform
-import re
-import webbrowser
-import urllib.parse
 
 class YouTubeStreamerGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("YouTube Live Streamer")
-        self.root.geometry("1200x900")
+        self.root.geometry("900x750")
         self.root.resizable(True, True)
         
-        # Try to import tkinterweb for HTML rendering
-        self.tkinterweb_available = False
-        try:
-            import tkinterweb
-            self.tkinterweb_available = True
-            self.tkinterweb = tkinterweb
-        except ImportError:
-            self.tkinterweb_available = False
+        # Apply dark theme
+        self.setup_dark_theme()
         
         # Configuration file
         self.config_file = "stream_config.json"
@@ -44,7 +35,6 @@ class YouTubeStreamerGUI:
         self.restart_count = 0
         self.stream_thread = None
         self.output_queue = queue.Queue()
-        self.video_frame_widget = None
         
         # Create UI
         self.create_widgets()
@@ -58,248 +48,200 @@ class YouTubeStreamerGUI:
         # Start output reader thread
         self.start_output_reader()
     
+    def setup_dark_theme(self):
+        """Setup modern dark theme with light buttons"""
+        # Dark theme colors
+        self.bg_color = "#1e1e1e"  # Dark background
+        self.fg_color = "#ffffff"   # White text
+        self.entry_bg = "#2d2d2d"  # Dark entry background
+        self.entry_fg = "#ffffff"   # White entry text
+        self.button_bg = "#4a9eff"  # Light blue button
+        self.button_fg = "#ffffff"  # White button text
+        self.button_hover = "#5fb0ff"  # Lighter blue on hover
+        self.accent_color = "#00d4ff"  # Cyan accent
+        self.success_color = "#4caf50"  # Green for success
+        self.error_color = "#f44336"    # Red for errors
+        
+        # Configure root window
+        self.root.configure(bg=self.bg_color)
+        
+        # Configure ttk styles
+        style = ttk.Style()
+        style.theme_use('clam')
+        
+        # Configure styles
+        style.configure('TFrame', background=self.bg_color)
+        style.configure('TLabel', background=self.bg_color, foreground=self.fg_color)
+        style.configure('TEntry', fieldbackground=self.entry_bg, foreground=self.entry_fg, 
+                       borderwidth=1, relief='solid')
+        style.configure('TButton', background=self.button_bg, foreground=self.button_fg,
+                       borderwidth=0, focuscolor='none', padding=10)
+        style.map('TButton',
+                 background=[('active', self.button_hover), ('pressed', self.button_bg)])
+        style.configure('TCheckbutton', background=self.bg_color, foreground=self.fg_color)
+        style.configure('TCheckbutton', focuscolor='none')
+        style.map('TCheckbutton',
+                 background=[('selected', self.bg_color)],
+                 foreground=[('selected', self.fg_color)])
+    
     def create_widgets(self):
-        # Create paned window for split view
-        paned = ttk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Main container with padding
+        main_frame = ttk.Frame(self.root, padding="20")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame.columnconfigure(1, weight=1)
         
-        # Left pane - Controls and settings
-        left_frame = ttk.Frame(paned, padding="10")
-        paned.add(left_frame, weight=1)
+        # Title with modern styling
+        title_frame = ttk.Frame(main_frame)
+        title_frame.grid(row=0, column=0, columnspan=3, pady=(0, 30), sticky=(tk.W, tk.E))
         
-        # Right pane - Video display
-        right_frame = ttk.Frame(paned, padding="10")
-        paned.add(right_frame, weight=1)
+        title_label = tk.Label(
+            title_frame,
+            text="YouTube Live Streamer",
+            font=("Segoe UI", 24, "bold"),
+            bg=self.bg_color,
+            fg=self.accent_color
+        )
+        title_label.pack()
         
-        # Configure grid weights for left frame
-        left_frame.columnconfigure(1, weight=1)
+        subtitle_label = tk.Label(
+            title_frame,
+            text="Stream your videos to YouTube Live",
+            font=("Segoe UI", 10),
+            bg=self.bg_color,
+            fg="#888888"
+        )
+        subtitle_label.pack(pady=(5, 0))
         
-        # Title
-        title_label = ttk.Label(left_frame, text="YouTube Live Streamer", 
-                               font=("Arial", 16, "bold"))
-        title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
+        # Video file selection section
+        section_frame = ttk.Frame(main_frame)
+        section_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=15)
+        section_frame.columnconfigure(1, weight=1)
         
-        # YouTube Studio URL input
-        ttk.Label(left_frame, text="YouTube Studio URL:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        self.youtube_url_var = tk.StringVar()
-        url_frame = ttk.Frame(left_frame)
-        url_frame.grid(row=1, column=1, columnspan=2, sticky=(tk.W, tk.E), pady=5)
-        url_frame.columnconfigure(0, weight=1)
+        ttk.Label(section_frame, text="Video File:", font=("Segoe UI", 11)).grid(
+            row=0, column=0, sticky=tk.W, pady=8, padx=(0, 15))
         
-        self.youtube_url_entry = ttk.Entry(url_frame, textvariable=self.youtube_url_var, width=40)
-        self.youtube_url_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5))
-        
-        ttk.Button(url_frame, text="Load Video", command=self.load_youtube_video).grid(row=0, column=1)
-        
-        # Video file selection
-        ttk.Label(left_frame, text="Video File:").grid(row=2, column=0, sticky=tk.W, pady=5)
         self.video_file_var = tk.StringVar()
-        video_frame = ttk.Frame(left_frame)
-        video_frame.grid(row=2, column=1, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+        video_frame = ttk.Frame(section_frame)
+        video_frame.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=8)
         video_frame.columnconfigure(0, weight=1)
         
-        self.video_file_entry = ttk.Entry(video_frame, textvariable=self.video_file_var, width=40)
-        self.video_file_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5))
+        self.video_file_entry = ttk.Entry(video_frame, textvariable=self.video_file_var, font=("Segoe UI", 10))
+        self.video_file_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
         
-        ttk.Button(video_frame, text="Browse", command=self.browse_video_file).grid(row=0, column=1)
+        browse_btn = ttk.Button(video_frame, text="Browse", command=self.browse_video_file, width=12)
+        browse_btn.grid(row=0, column=1)
         
-        # YouTube Stream Key
-        ttk.Label(left_frame, text="YouTube Stream Key:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        # YouTube Stream Key section
+        ttk.Label(section_frame, text="Stream Key:", font=("Segoe UI", 11)).grid(
+            row=1, column=0, sticky=tk.W, pady=8, padx=(0, 15))
+        
         self.stream_key_var = tk.StringVar()
-        stream_key_entry = ttk.Entry(left_frame, textvariable=self.stream_key_var, 
-                                     show="*", width=40)
-        stream_key_entry.grid(row=3, column=1, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+        key_frame = ttk.Frame(section_frame)
+        key_frame.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=8)
+        key_frame.columnconfigure(0, weight=1)
         
-        # Show/Hide stream key button
+        stream_key_entry = ttk.Entry(key_frame, textvariable=self.stream_key_var, 
+                                     show="*", font=("Segoe UI", 10))
+        stream_key_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10))
+        
         self.show_key_var = tk.BooleanVar()
-        show_key_check = ttk.Checkbutton(left_frame, text="Show Key", 
-                                         variable=self.show_key_var,
-                                         command=lambda: stream_key_entry.config(
-                                             show="" if self.show_key_var.get() else "*"))
-        show_key_check.grid(row=3, column=2, sticky=tk.E, padx=(5, 0))
+        show_key_check = ttk.Checkbutton(key_frame, text="Show", variable=self.show_key_var,
+                                        command=lambda: stream_key_entry.config(
+                                            show="" if self.show_key_var.get() else "*"))
+        show_key_check.grid(row=0, column=1)
         
-        # Control buttons frame
-        button_frame = ttk.Frame(left_frame)
-        button_frame.grid(row=4, column=0, columnspan=3, pady=20)
+        # Control buttons with modern styling
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=2, column=0, columnspan=3, pady=30)
         
-        self.start_button = ttk.Button(button_frame, text="Start Stream", 
-                                       command=self.start_stream, width=15)
-        self.start_button.pack(side=tk.LEFT, padx=5)
+        self.start_button = ttk.Button(
+            button_frame, 
+            text="▶ Start Stream", 
+            command=self.start_stream, 
+            width=18
+        )
+        self.start_button.pack(side=tk.LEFT, padx=8)
         
-        self.stop_button = ttk.Button(button_frame, text="Stop Stream", 
-                                      command=self.stop_stream, width=15, state=tk.DISABLED)
-        self.stop_button.pack(side=tk.LEFT, padx=5)
+        self.stop_button = ttk.Button(
+            button_frame, 
+            text="⏹ Stop Stream", 
+            command=self.stop_stream, 
+            width=18,
+            state=tk.DISABLED
+        )
+        self.stop_button.pack(side=tk.LEFT, padx=8)
         
-        ttk.Button(button_frame, text="Save Config", 
-                  command=self.save_config, width=15).pack(side=tk.LEFT, padx=5)
+        config_frame = ttk.Frame(button_frame)
+        config_frame.pack(side=tk.LEFT, padx=15)
         
-        ttk.Button(button_frame, text="Load Config", 
-                  command=self.load_config, width=15).pack(side=tk.LEFT, padx=5)
+        ttk.Button(config_frame, text="💾 Save", command=self.save_config, width=12).pack(side=tk.LEFT, padx=4)
+        ttk.Button(config_frame, text="📂 Load", command=self.load_config, width=12).pack(side=tk.LEFT, padx=4)
         
-        # Status label
-        self.status_var = tk.StringVar(value="Ready")
-        status_label = ttk.Label(left_frame, textvariable=self.status_var, 
-                                font=("Arial", 10, "bold"))
-        status_label.grid(row=5, column=0, columnspan=3, sticky=tk.W, pady=(0, 5))
+        # Status indicator
+        status_frame = ttk.Frame(main_frame)
+        status_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 20))
         
-        # Log display
-        ttk.Label(left_frame, text="Stream Logs:").grid(row=6, column=0, sticky=tk.W, pady=(10, 5))
+        self.status_var = tk.StringVar()
+        self.status_indicator = tk.Label(
+            status_frame,
+            text="●",
+            font=("Segoe UI", 16),
+            bg=self.bg_color,
+            fg=self.success_color
+        )
+        self.status_indicator.pack(side=tk.LEFT, padx=(0, 10))
         
-        log_frame = ttk.Frame(left_frame)
-        log_frame.grid(row=7, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
+        status_label = tk.Label(
+            status_frame,
+            textvariable=self.status_var,
+            font=("Segoe UI", 11, "bold"),
+            bg=self.bg_color,
+            fg=self.fg_color
+        )
+        status_label.pack(side=tk.LEFT)
+        
+        # Set initial status
+        self.update_status("Ready")
+        
+        # Log display section
+        log_section = ttk.Frame(main_frame)
+        log_section.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=10)
+        log_section.columnconfigure(0, weight=1)
+        log_section.rowconfigure(1, weight=1)
+        main_frame.rowconfigure(4, weight=1)
+        
+        log_header = ttk.Frame(log_section)
+        log_header.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        ttk.Label(log_header, text="Stream Logs", font=("Segoe UI", 12, "bold")).pack(side=tk.LEFT)
+        
+        clear_btn = ttk.Button(log_header, text="Clear", command=self.clear_logs, width=10)
+        clear_btn.pack(side=tk.RIGHT)
+        
+        # Log text area with dark theme
+        log_frame = ttk.Frame(log_section)
+        log_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         log_frame.columnconfigure(0, weight=1)
         log_frame.rowconfigure(0, weight=1)
-        left_frame.rowconfigure(7, weight=1)
         
-        self.log_text = scrolledtext.ScrolledText(log_frame, height=10, width=50, 
-                                                   wrap=tk.WORD, state=tk.DISABLED)
+        self.log_text = scrolledtext.ScrolledText(
+            log_frame,
+            height=15,
+            wrap=tk.WORD,
+            state=tk.DISABLED,
+            bg=self.entry_bg,
+            fg=self.fg_color,
+            insertbackground=self.fg_color,
+            selectbackground=self.button_bg,
+            selectforeground=self.button_fg,
+            font=("Consolas", 9),
+            relief=tk.FLAT,
+            borderwidth=1,
+            highlightthickness=1,
+            highlightbackground="#444444",
+            highlightcolor=self.accent_color
+        )
         self.log_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        # Clear logs button
-        ttk.Button(left_frame, text="Clear Logs", 
-                  command=self.clear_logs).grid(row=8, column=0, columnspan=3, pady=5)
-        
-        # Right pane - Video display
-        ttk.Label(right_frame, text="Live Stream Preview", 
-                 font=("Arial", 12, "bold")).pack(pady=(0, 10))
-        
-        # Video display frame
-        self.video_display_frame = ttk.Frame(right_frame, relief=tk.SUNKEN, borderwidth=2)
-        self.video_display_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-        right_frame.columnconfigure(0, weight=1)
-        right_frame.rowconfigure(1, weight=1)
-        
-        # Placeholder for video
-        self.video_placeholder = ttk.Label(
-            self.video_display_frame, 
-            text="Enter YouTube Studio URL and click 'Load Video'\nto display the live stream here",
-            font=("Arial", 10),
-            justify=tk.CENTER
-        )
-        self.video_placeholder.pack(expand=True, fill=tk.BOTH)
-    
-    def extract_video_id(self, url):
-        """Extract video ID from YouTube Studio URL"""
-        # Pattern for YouTube Studio URL: https://studio.youtube.com/video/VIDEO_ID/livestreaming
-        patterns = [
-            r'studio\.youtube\.com/video/([a-zA-Z0-9_-]+)',
-            r'youtube\.com/watch\?v=([a-zA-Z0-9_-]+)',
-            r'youtu\.be/([a-zA-Z0-9_-]+)',
-            r'youtube\.com/embed/([a-zA-Z0-9_-]+)',
-        ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, url)
-            if match:
-                return match.group(1)
-        return None
-    
-    def load_youtube_video(self):
-        """Load and display YouTube video from Studio URL"""
-        url = self.youtube_url_var.get().strip()
-        
-        if not url:
-            messagebox.showwarning("Warning", "Please enter a YouTube Studio URL")
-            return
-        
-        video_id = self.extract_video_id(url)
-        
-        if not video_id:
-            messagebox.showerror("Error", "Could not extract video ID from URL.\n"
-                                 "Please enter a valid YouTube Studio URL.\n"
-                                 "Example: https://studio.youtube.com/video/e18cavUkogI/livestreaming")
-            return
-        
-        self.log_message(f"Loading video with ID: {video_id}")
-        
-        # Create embed URL for live stream
-        embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=1"
-        
-        # Remove placeholder
-        if self.video_placeholder:
-            self.video_placeholder.destroy()
-            self.video_placeholder = None
-        
-        # Remove existing video widget if any
-        if self.video_frame_widget:
-            self.video_frame_widget.destroy()
-            self.video_frame_widget = None
-        
-        # Try to use tkinterweb if available
-        if self.tkinterweb_available:
-            try:
-                self.video_frame_widget = self.tkinterweb.HtmlFrame(
-                    self.video_display_frame,
-                    messages_enabled=False
-                )
-                self.video_frame_widget.pack(fill=tk.BOTH, expand=True)
-                
-                # Create HTML with iframe
-                html_content = f"""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>
-                        body {{
-                            margin: 0;
-                            padding: 0;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            height: 100vh;
-                            background: #000;
-                        }}
-                        iframe {{
-                            width: 100%;
-                            height: 100%;
-                            border: none;
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <iframe src="{embed_url}" 
-                            frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowfullscreen>
-                    </iframe>
-                </body>
-                </html>
-                """
-                self.video_frame_widget.load_html(html_content)
-                self.log_message(f"Video loaded successfully (ID: {video_id})")
-            except Exception as e:
-                self.log_message(f"Error loading video with tkinterweb: {e}")
-                self._create_fallback_video_display(video_id, embed_url)
-        else:
-            self._create_fallback_video_display(video_id, embed_url)
-    
-    def _create_fallback_video_display(self, video_id, embed_url):
-        """Create fallback video display when tkinterweb is not available"""
-        # Create a frame with link and instructions
-        fallback_frame = ttk.Frame(self.video_display_frame)
-        fallback_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        
-        info_label = ttk.Label(
-            fallback_frame,
-            text=f"Video ID: {video_id}\n\n"
-                 "To view the live stream, click the button below\nto open it in your default browser.\n\n"
-                 "For embedded video support, install tkinterweb:\n"
-                 "pip install tkinterweb",
-            font=("Arial", 10),
-            justify=tk.CENTER
-        )
-        info_label.pack(pady=20)
-        
-        open_button = ttk.Button(
-            fallback_frame,
-            text="Open Video in Browser",
-            command=lambda: webbrowser.open(embed_url)
-        )
-        open_button.pack(pady=10)
-        
-        # Also open automatically
-        webbrowser.open(embed_url)
-        self.log_message(f"Opened video in browser (ID: {video_id})")
     
     def browse_video_file(self):
         filename = filedialog.askopenfilename(
@@ -308,6 +250,23 @@ class YouTubeStreamerGUI:
         )
         if filename:
             self.video_file_var.set(filename)
+    
+    def update_status(self, message, color=None):
+        """Update status text and indicator color"""
+        self.status_var.set(message)
+        if color is None:
+            # Auto-determine color based on message
+            if "Streaming" in message or "Starting" in message:
+                color = self.accent_color
+            elif "Stopped" in message or "Ready" in message:
+                color = self.success_color
+            elif "Error" in message or "Stopping" in message:
+                color = self.error_color
+            elif "Reconnecting" in message or "Verifying" in message:
+                color = "#ffa500"  # Orange
+            else:
+                color = self.fg_color
+        self.status_indicator.config(fg=color)
     
     def log_message(self, message):
         """Add a timestamped message to the log display"""
@@ -481,7 +440,7 @@ class YouTubeStreamerGUI:
         self.restart_count = 0
         self.start_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
-        self.status_var.set("Starting stream...")
+        self.update_status("Starting stream...")
         
         # Start streaming in a separate thread
         self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
@@ -493,7 +452,7 @@ class YouTubeStreamerGUI:
             return
         
         self.streaming = False
-        self.status_var.set("Stopping stream...")
+        self.update_status("Stopping stream...")
         self.log_message("Received stop signal, stopping stream...")
         
         # Disable stop button to prevent multiple clicks
@@ -522,7 +481,7 @@ class YouTubeStreamerGUI:
         # Verify streaming is fully stopped
         max_wait = 10  # Maximum 10 seconds
         wait_count = 0
-        self.status_var.set("Verifying stream stopped...")
+        self.update_status("Verifying stream stopped...")
         while wait_count < max_wait:
             # Check if any ffmpeg processes are still running
             try:
@@ -550,7 +509,7 @@ class YouTubeStreamerGUI:
             
             wait_count += 1
             if wait_count % 2 == 0:  # Update status every second
-                self.status_var.set(f"Verifying stream stopped... ({wait_count/2}s)")
+                self.update_status(f"Verifying stream stopped... ({wait_count/2}s)")
             time.sleep(0.5)
         
         if wait_count >= max_wait:
@@ -558,7 +517,7 @@ class YouTubeStreamerGUI:
             self.kill_all_ffmpeg_processes()
         
         self.start_button.config(state=tk.NORMAL)
-        self.status_var.set("Stopped")
+        self.update_status("Stopped")
         self.log_message("Stream stopped by user.")
     
     def stream_loop(self):
@@ -571,10 +530,10 @@ class YouTubeStreamerGUI:
             
             if self.restart_count == 1:
                 self.log_message(f"Starting YouTube stream (attempt {self.restart_count})...")
-                self.root.after(0, lambda: self.status_var.set("Streaming..."))
+                self.root.after(0, lambda: self.update_status("Streaming..."))
             else:
                 self.log_message(f"Stream disconnected. Restarting stream (attempt {self.restart_count})...")
-                self.root.after(0, lambda: self.status_var.set(f"Reconnecting... (attempt {self.restart_count})"))
+                self.root.after(0, lambda: self.update_status(f"Reconnecting... (attempt {self.restart_count})"))
                 # Wait 5 seconds before restarting
                 for _ in range(5):
                     if not self.streaming:
@@ -671,7 +630,7 @@ class YouTubeStreamerGUI:
                     time.sleep(5)
         
         # Cleanup
-        self.root.after(0, lambda: self.status_var.set("Stopped"))
+        self.root.after(0, lambda: self.update_status("Stopped"))
         self.root.after(0, lambda: self.start_button.config(state=tk.NORMAL))
         self.root.after(0, lambda: self.stop_button.config(state=tk.DISABLED))
     
@@ -679,8 +638,7 @@ class YouTubeStreamerGUI:
         """Save configuration to JSON file"""
         config = {
             "video_file": self.video_file_var.get(),
-            "stream_key": self.stream_key_var.get(),
-            "youtube_url": self.youtube_url_var.get()
+            "stream_key": self.stream_key_var.get()
         }
         
         try:
@@ -703,11 +661,6 @@ class YouTubeStreamerGUI:
                     self.video_file_var.set(config["video_file"])
                 if "stream_key" in config:
                     self.stream_key_var.set(config["stream_key"])
-                if "youtube_url" in config:
-                    self.youtube_url_var.set(config["youtube_url"])
-                    # Auto-load video if URL is present
-                    if config["youtube_url"]:
-                        self.root.after(500, self.load_youtube_video)
                 
                 self.log_message("Configuration loaded successfully")
             except Exception as e:
