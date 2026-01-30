@@ -1,10 +1,4 @@
-Converting a Python script into a standalone executable (`.exe`) is a classic "final boss" move for any developer. It makes your software portable so others can run it without needing Python installed.
-
-The industry standard for this is **PyInstaller**. Here is how you can turn `YouTubeLiveStream.py` into an executable right from that terminal window.
-
----
-
-### 1. Install PyInstaller
+## 1. Install PyInstaller
 
 First, you need the tool that does the heavy lifting. Run this command in your terminal:
 
@@ -49,5 +43,3 @@ After the process finishes (it might take a minute), PyInstaller creates a few n
 * **Hidden Imports:** If your script uses complex libraries (like `google-api-python-client`), PyInstaller might occasionally miss a dependency. If the `.exe` crashes immediately, run it from a terminal to see the error message.
 * **File Size:** Don't be alarmed if the `.exe` is 30MB+ for a small script; it’s literally "zipping" a portable version of Python inside the file.
 * **Antivirus:** Sometimes Windows Defender gets suspicious of freshly baked `.exe` files. You might need to "Run anyway" or whitelist your `dist` folder.
-
-**Would you like me to help you write a `.spec` file to include custom icons or external data files (like images or JSON) in your build?**

@@ -88,7 +88,6 @@ class InstagramStreamerGUI:
         title_frame = ttk.Frame(main_frame)
         title_frame.grid(row=0, column=0, columnspan=3, pady=(0, 30), sticky=(tk.W, tk.E))
         
-        # Drawing a simple gradient effect with text
         title_label = tk.Label(
             title_frame,
             text="Instagram Live",
@@ -123,9 +122,9 @@ class InstagramStreamerGUI:
         self.video_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10), pady=5)
         self.create_rounded_button(v_frame, "Browse", self.browse_video, width=10).grid(row=0, column=1)
         
-        # 2. RTMP URL (IG often provides this)
+        # 2. RTMP URL
         ttk.Label(section_frame, text="RTMP URL:", font=("Segoe UI", 10, "bold")).grid(row=1, column=0, sticky=tk.W, pady=8, padx=(0, 15))
-        self.rtmp_url_var = tk.StringVar(value="rtmps://live-upload.instagram.com:443/rtmp/")
+        self.rtmp_url_var = tk.StringVar(value="")
         self.rtmp_entry = self.create_styled_entry(section_frame, self.rtmp_url_var)
         self.rtmp_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=5)
         
@@ -150,6 +149,7 @@ class InstagramStreamerGUI:
         self.start_btn = self.create_rounded_button(self.button_frame, "▶ Go Live", self.start_stream, width=18, height=2)
         self.start_btn.pack(side=tk.LEFT, padx=10)
         
+        # FIXED: Initial state should be disabled (True)
         self.stop_btn = self.create_rounded_button(self.button_frame, "⏹ Stop Stream", self.stop_stream, width=18, height=2, disabled=True)
         self.stop_btn.pack(side=tk.LEFT, padx=10)
         
@@ -200,45 +200,46 @@ class InstagramStreamerGUI:
         canvas = tk.Canvas(btn_frame, width=width_px, height=height_px, bg=self.bg_color, highlightthickness=0)
         canvas.pack()
         
-        color = "#555555" if disabled else self.button_bg
-        txt_color = "#999999" if disabled else self.fg_color
-        
-        def draw(fill):
+        def draw(fill, txt_col):
             canvas.delete("all")
-            # Draw rounded rect
             canvas.create_oval(0, 0, radius*2, radius*2, fill=fill, outline="")
             canvas.create_oval(width_px-radius*2, 0, width_px, radius*2, fill=fill, outline="")
             canvas.create_oval(0, height_px-radius*2, radius*2, height_px, fill=fill, outline="")
             canvas.create_oval(width_px-radius*2, height_px-radius*2, width_px, height_px, fill=fill, outline="")
             canvas.create_rectangle(radius, 0, width_px-radius, height_px, fill=fill, outline="")
             canvas.create_rectangle(0, radius, width_px, height_px-radius, fill=fill, outline="")
-            canvas.create_text(width_px//2, height_px//2, text=text, fill=txt_color, font=("Segoe UI", 9, "bold"))
+            canvas.create_text(width_px//2, height_px//2, text=text, fill=txt_col, font=("Segoe UI", 9, "bold"))
 
-        draw(color)
         btn_frame.draw = draw
         btn_frame.disabled = disabled
         btn_frame.command = command
+        btn_frame.canvas = canvas
+
+        # Initial Draw
+        initial_bg = "#555555" if disabled else self.button_bg
+        initial_fg = "#999999" if disabled else self.fg_color
+        draw(initial_bg, initial_fg)
 
         def on_enter(e):
-            if not btn_frame.disabled: draw(self.button_hover)
+            if not btn_frame.disabled: draw(self.button_hover, self.fg_color)
         def on_leave(e):
-            if not btn_frame.disabled: draw(self.button_bg)
+            if not btn_frame.disabled: draw(self.button_bg, self.fg_color)
         def on_click(e):
             if not btn_frame.disabled and btn_frame.command: btn_frame.command()
 
-        if not disabled:
-            canvas.bind("<Enter>", on_enter)
-            canvas.bind("<Leave>", on_leave)
-            canvas.bind("<Button-1>", on_click)
-            canvas.config(cursor="hand2")
+        canvas.bind("<Enter>", on_enter)
+        canvas.bind("<Leave>", on_leave)
+        canvas.bind("<Button-1>", on_click)
+        if not disabled: canvas.config(cursor="hand2")
             
-        btn_frame.canvas = canvas
         return btn_frame
 
     def _set_btn_state(self, btn, disabled):
+        """Update button state and redraw correctly"""
         btn.disabled = disabled
-        color = "#555555" if disabled else self.button_bg
-        btn.draw(color)
+        bg = "#555555" if disabled else self.button_bg
+        fg = "#999999" if disabled else self.fg_color
+        btn.draw(bg, fg)
         btn.canvas.config(cursor="" if disabled else "hand2")
 
     def browse_video(self):
@@ -248,7 +249,7 @@ class InstagramStreamerGUI:
     def update_status(self, msg, color=None):
         self.status_var.set(msg)
         if not color:
-            if "Live" in msg: color = self.accent_pink
+            if "LIVE" in msg: color = self.accent_pink
             elif "Error" in msg: color = self.error_color
             else: color = self.success_color
         self.status_indicator.config(fg=color)
@@ -260,7 +261,9 @@ class InstagramStreamerGUI:
         self.log_text.insert(tk.END, full_msg)
         self.log_text.see(tk.END)
         self.log_text.config(state=tk.DISABLED)
-        with open("logs/insta_stream.log", "a") as f: f.write(full_msg)
+        try:
+            with open("logs/insta_stream.log", "a") as f: f.write(full_msg)
+        except: pass
 
     def start_output_reader(self):
         def reader():
@@ -277,10 +280,11 @@ class InstagramStreamerGUI:
             return
         
         self.streaming = True
+        # Toggle buttons
         self._set_btn_state(self.start_btn, True)
         self._set_btn_state(self.stop_btn, False)
-        self.update_status("Starting Instagram Live...")
         
+        self.update_status("Starting Instagram Live...")
         self.stream_thread = threading.Thread(target=self.run_ffmpeg, daemon=True)
         self.stream_thread.start()
 
@@ -294,7 +298,9 @@ class InstagramStreamerGUI:
                 else:
                     self.ffmpeg_process.terminate()
             except: pass
+        
         self.ffmpeg_process = None
+        # Toggle buttons back
         self._set_btn_state(self.start_btn, False)
         self._set_btn_state(self.stop_btn, True)
         self.update_status("Stream Stopped")
@@ -304,20 +310,17 @@ class InstagramStreamerGUI:
         url = self.rtmp_url_var.get()
         key = self.stream_key_var.get()
         
-        # Instagram specific command: 
-        # 1. -re (read rate) 
-        # 2. -stream_loop -1 (infinite loop)
-        # 3. -vf (CROP TO 9:16 AND SCALE) -> Crucial for Instagram
+        # Instagram vertical format command
         cmd = [
             "ffmpeg", "-re", "-stream_loop", "-1", "-i", video,
-            "-vf", "crop=in_h*9/16:in_h,scale=720:1280", # Vertical conversion
+            "-vf", "crop=in_h*9/16:in_h,scale=720:1280", 
             "-c:v", "libx264", "-preset", "superfast", "-b:v", "2500k",
             "-maxrate", "2500k", "-bufsize", "5000k", "-pix_fmt", "yuv420p",
             "-g", "60", "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
             "-f", "flv", f"{url}{key}"
         ]
 
-        self.log_message("Launching FFmpeg with Instagram vertical filters...")
+        self.log_message("Launching FFmpeg...")
         
         try:
             self.ffmpeg_process = subprocess.Popen(
@@ -345,12 +348,14 @@ class InstagramStreamerGUI:
 
     def load_config(self):
         if os.path.exists(self.config_file):
-            with open(self.config_file, "r") as f:
-                data = json.load(f)
-                self.video_file_var.set(data.get("video", ""))
-                self.rtmp_url_var.set(data.get("url", ""))
-                self.stream_key_var.set(data.get("key", ""))
-            self.log_message("Settings loaded.")
+            try:
+                with open(self.config_file, "r") as f:
+                    data = json.load(f)
+                    self.video_file_var.set(data.get("video", ""))
+                    self.rtmp_url_var.set(data.get("url", ""))
+                    self.stream_key_var.set(data.get("key", ""))
+                self.log_message("Settings loaded.")
+            except: pass
 
     def clear_logs(self):
         self.log_text.config(state=tk.NORMAL)
