@@ -31,6 +31,9 @@ if [ ! -f "$VIDEO_FILE" ]; then
     exit 1
 fi
 
+# CREATE LOGS DIRECTORY IF IT DOES NOT EXIST
+mkdir -p logs
+
 # use this parameter to crop and scale video for Instagram vertical format
 # -vf "crop=in_h*9/16:in_h,scale=720:1280" \
 
