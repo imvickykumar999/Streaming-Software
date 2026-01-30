@@ -27,7 +27,6 @@ fi
 # Check if video file exists
 if [ ! -f "$VIDEO_FILE" ]; then
     echo "Error: Video file '$VIDEO_FILE' not found in current directory"
-    echo "Download a video using: python3 download_youtube.py \"URL\""
     exit 1
 fi
 
@@ -40,4 +39,4 @@ mkdir -p logs
 ffmpeg -re -stream_loop -1 -i "$VIDEO_FILE" \
 -c:v libx264 -preset superfast -b:v 2000k -maxrate 2000k -bufsize 4000k \
 -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
--f flv -rtmp_live live "${INSTAGRAM_RTMP_URL}${INSTAGRAM_STREAM_KEY}" > logs/stream_ig_log.txt 2>&1
+-f flv -rtmp_live live "${INSTAGRAM_RTMP_URL}${INSTAGRAM_STREAM_KEY}" > logs/insta_stream.log 2>&1
