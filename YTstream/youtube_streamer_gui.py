@@ -461,7 +461,7 @@ class YouTubeStreamerGUI:
         
         # Also write to log file
         try:
-            with open("logs/stream_yt_log.log", "a", encoding="utf-8") as f:
+            with open("logs/stream_yt.log", "a", encoding="utf-8") as f:
                 f.write(log_entry)
         except Exception as e:
             print(f"Error writing to log file: {e}")
