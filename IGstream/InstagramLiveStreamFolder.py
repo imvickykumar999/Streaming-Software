@@ -44,9 +44,6 @@ class InstagramStreamerGUI:
         # Load saved configuration
         self.load_config()
         
-        # Ensure logs directory exists
-        os.makedirs("logs", exist_ok=True)
-        
         # Start output reader thread
         self.start_output_reader()
     
@@ -98,14 +95,14 @@ class InstagramStreamerGUI:
         self.folder_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10), pady=5)
         self.create_rounded_button(v_frame, "Browse Folder", self.browse_folder, width=15).grid(row=0, column=1)
         
-        # 2. RTMP URL (Instagram usually provides this or you use a 3rd party tool)
-        ttk.Label(section_frame, text="RTMP URL:", font=("Segoe UI", 10, "bold")).grid(row=1, column=0, sticky=tk.W, pady=8, padx=(0, 15))
+        # 2. Stream URL (Instagram usually provides this or you use a 3rd party tool)
+        ttk.Label(section_frame, text="Stream URL:", font=("Segoe UI", 10, "bold")).grid(row=1, column=0, sticky=tk.W, pady=8, padx=(0, 15))
         self.rtmp_url_var = tk.StringVar(value="")
         self.rtmp_entry = self.create_styled_entry(section_frame, self.rtmp_url_var)
         self.rtmp_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=5)
         
-        # 3. Stream Key
-        ttk.Label(section_frame, text="Stream Key:", font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky=tk.W, pady=8, padx=(0, 15))
+        # 3. Stream key
+        ttk.Label(section_frame, text="Stream key:", font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky=tk.W, pady=8, padx=(0, 15))
         self.stream_key_var = tk.StringVar()
         k_frame = ttk.Frame(section_frame)
         k_frame.grid(row=2, column=1, sticky=(tk.W, tk.E))
@@ -316,10 +313,10 @@ class InstagramStreamerGUI:
         self.root.after(0, lambda: self.current_video_var.set("Stream cycle ended"))
 
     def save_config(self):
-        data = {"folder": self.folder_path_var.get(), "url": self.rtmp_url_var.get(), "key": self.stream_key_var.get()}
+        data = {"folder": self.folder_path_var.get(), "url": self.rtmp_url_var.get(), "key": ""}
         try:
             with open(self.config_file, "w") as f: json.dump(data, f)
-            messagebox.showinfo("Success", "Settings saved")
+            self.log_message("Configuration saved.")
         except Exception as e: messagebox.showerror("Error", str(e))
 
     def load_config(self):
