@@ -1,29 +1,27 @@
-## How to Create the EXE
+# Py file to Exe
 
-Since your app has a custom UI and uses threading, follow these steps in your terminal:
+Since your logo `IGTV.jpg` is a JPEG, you should ideally convert it to an `.ico` file for the best compatibility with Windows taskbars and file explorers. However, PyInstaller can often handle standard image formats if the necessary modules (like Pillow) are installed in your environment.
 
-1. **Install PyInstaller:**
+### The Modified Command
+
+Run this command in your terminal:
+
 ```bash
-pip install pyinstaller
-
+pyinstaller --onefile --windowed --icon=IGTV.jpg InstagramLiveStreamFolder.py
 
 ```
 
+---
 
-2. **Build the File:**
-Use the `--noconsole` (or `--windowed`) flag so that a black command prompt doesn't open behind your Instagram Streamer window.
-```bash
-pyinstaller --onefile IGTVGUI.py
+### Key Details for Success
 
+* **`--windowed` (or `-w`):** Use this if your script has a GUI (like a Tkinter or PyQt window). This prevents a black command prompt (console) from popping up when you run the `.exe`. If your script is strictly a command-line tool, you can omit this.
+* **File Format:** While PyInstaller is smart, Windows natively prefers `.ico` files for icons. If the icon doesn't show up correctly, try converting `IGTV.jpg` to `IGTV.ico` using an online converter and update the command to `--icon=IGTV.ico`.
+* **The "Dist" Folder:** Once the process finishes, your new executable will be located in a newly created folder named **`dist`** within your current directory.
 
-```
+### Troubleshooting
 
+If you run the `.exe` and it fails because it "cannot find" `config.env` or `ig_stream_config.json`, it’s because `--onefile` doesn't automatically pack your external config files into the executable—it only packs Python dependencies. You have two options:
 
-3. **Result:**
-Go to the `dist/` folder. Your `InstagramLiveStreamer.exe` will be there.
-
-**Notes for this specific App:**
-
-* **FFmpeg Requirement:** Your `.exe` still requires `ffmpeg` to be installed on the Windows system's PATH. If you plan to share this with others who don't have FFmpeg, you would need to bundle the `ffmpeg.exe` binary with the app using the `--add-data` flag.
-* **Permissions:** Streaming apps sometimes trigger firewall warnings; make sure to allow access if prompted.
-* **Icons:** If you have a `.ico` file, you can add it with `--icon=app_icon.ico`.
+1. **Manual:** Keep the `.exe` in the same folder as your `.env` and `.json` files.
+2. **Embedded:** Add `--add-data "config.env;."` to your command to bake the config file inside the exe (though this makes them harder to edit later).

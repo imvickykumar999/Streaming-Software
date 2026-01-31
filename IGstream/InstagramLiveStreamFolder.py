@@ -100,7 +100,7 @@ class InstagramStreamerGUI:
         
         # 2. RTMP URL (Instagram usually provides this or you use a 3rd party tool)
         ttk.Label(section_frame, text="RTMP URL:", font=("Segoe UI", 10, "bold")).grid(row=1, column=0, sticky=tk.W, pady=8, padx=(0, 15))
-        self.rtmp_url_var = tk.StringVar(value="rtmps://live-upload.instagram.com:443/rtmp/")
+        self.rtmp_url_var = tk.StringVar(value="")
         self.rtmp_entry = self.create_styled_entry(section_frame, self.rtmp_url_var)
         self.rtmp_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=5)
         
@@ -328,7 +328,7 @@ class InstagramStreamerGUI:
                 with open(self.config_file, "r") as f:
                     data = json.load(f)
                     self.folder_path_var.set(data.get("folder", ""))
-                    self.rtmp_url_var.set(data.get("url", "rtmps://live-upload.instagram.com:443/rtmp/"))
+                    self.rtmp_url_var.set(data.get("url", ""))
                     self.stream_key_var.set(data.get("key", ""))
             except: pass
 
